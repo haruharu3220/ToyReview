@@ -12,8 +12,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.example.toyreview.R
 
+
+enum class Screen(val label: String) {
+    Home("Home"),
+    Profile("Profile")
+}
+
 @Composable
-fun MyNavigation(modifier: Modifier = Modifier) {
+fun MyNavigation(
+    currentScreen: Screen,
+    onScreenChange: (Screen) -> Unit,
+    modifier: Modifier = Modifier
+) {
     NavigationBar(
         modifier = modifier
     ) {
@@ -27,8 +37,8 @@ fun MyNavigation(modifier: Modifier = Modifier) {
             label = {
                 Text(stringResource(R.string.bottom_navigation_home))
             },
-            selected = true,
-            onClick = {}
+            selected = currentScreen == Screen.Home,
+            onClick = { onScreenChange(Screen.Home) }
         )
         NavigationBarItem(
             icon = {
@@ -40,8 +50,8 @@ fun MyNavigation(modifier: Modifier = Modifier) {
             label = {
                 Text(stringResource(R.string.bottom_navigation_profile))
             },
-            selected = false,
-            onClick = {}
+            selected = currentScreen == Screen.Profile,
+            onClick = {onScreenChange(Screen.Profile)}
         )
 
     }

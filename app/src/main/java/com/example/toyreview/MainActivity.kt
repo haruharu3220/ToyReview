@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.example.toyreview.ui.components.MyNavigation
+import com.example.toyreview.ui.components.Screen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,30 +61,42 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MyApp(modifier: Modifier = Modifier) {
+    var currentScreen by rememberSaveable { mutableStateOf(Screen.Home) }
+
     var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
 
     ToyReviewTheme {
-        Scaffold(
-            topBar = {
-                     Text(text = "Toy Review")
-            },
-            bottomBar = {
-                MyNavigation()
-            }
-        ) { innerPadding ->
-                OnboardingScreen(
+        Scaffold(topBar = {
+            Text(text = "Toy Review")
+        }, bottomBar = {
+            MyNavigation(
+                currentScreen = currentScreen,
+                onScreenChange = {
+                    screen -> currentScreen = screen
+                }
+            )
+        }) { innerPadding ->
+//                OnboardingScreen(
+//                    modifier = modifier.padding(innerPadding)
+//                        .background(color = Color.Green),
+//                    onContinueClicked2 = {}
+//                )
+            when (currentScreen) {
+                Screen.Home -> OnboardingScreen(modifier = modifier.padding(innerPadding),
+                    onContinueClicked2 = {})
+
+                Screen.Profile -> Greetings(
                     modifier = modifier.padding(innerPadding)
-                        .background(color = Color.Green),
-                    onContinueClicked2 = {}
                 )
+            }
+
         }
     }
 }
 
 @Composable
 fun OnboardingScreen(
-    onContinueClicked2: () -> Unit,
-    modifier: Modifier = Modifier
+    onContinueClicked2: () -> Unit, modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -92,8 +105,7 @@ fun OnboardingScreen(
     ) {
         Text("Welcome to the Basics Codelab!")
         Button(
-            modifier = Modifier.padding(vertical = 24.dp),
-            onClick = onContinueClicked2
+            modifier = Modifier.padding(vertical = 24.dp), onClick = onContinueClicked2
         ) {
             Text("Continue")
         }
@@ -102,8 +114,7 @@ fun OnboardingScreen(
 
 @Composable
 private fun Greetings(
-    modifier: Modifier = Modifier,
-    names: List<String> = List(1000) { "$it" }
+    modifier: Modifier = Modifier, names: List<String> = List(1000) { "$it" }
 ) {
     LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
         items(items = names) { name ->
@@ -117,8 +128,7 @@ private fun Greeting(name: String, modifier: Modifier = Modifier) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primary
-        ),
-        modifier = modifier.padding(vertical = 4.dp, horizontal = 8.dp)
+        ), modifier = modifier.padding(vertical = 4.dp, horizontal = 8.dp)
     ) {
         CardContent(name)
     }
@@ -133,8 +143,7 @@ private fun CardContent(name: String) {
             .padding(12.dp)
             .animateContentSize(
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
+                    dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow
                 )
             )
     ) {
@@ -151,8 +160,9 @@ private fun CardContent(name: String) {
             )
             if (expanded) {
                 Text(
-                    text = ("Composem ipsum color sit lazy, " +
-                            "padding theme elit, sed do bouncy. ").repeat(4),
+                    text = ("Composem ipsum color sit lazy, " + "padding theme elit, sed do bouncy. ").repeat(
+                        4
+                    ),
                 )
             }
         }
