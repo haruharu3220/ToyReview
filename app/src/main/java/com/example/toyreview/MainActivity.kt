@@ -32,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -42,21 +43,94 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.example.toyreview.ui.components.MyNavigation
 import com.example.toyreview.ui.components.Screen
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.gotrue.Auth
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+
+
+val supabase = createSupabaseClient(
+    supabaseUrl = BuildConfig.SUPABASE_URL,
+    supabaseKey = BuildConfig.SUPABASE_KEY,
+) {
+//    install(Auth)
+    install(Postgrest)
+    //install other modules
+}
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApp()
+            NotesList()
         }
     }
 }
+
+@Serializable
+data class Note(
+    val id: Int,
+    val body: String,
+)
+
+@Composable
+fun NotesList(
+    modifier: Modifier = Modifier
+) {
+    val notes = remember { mutableStateListOf<Note>() }
+    LaunchedEffect(Unit) {
+        val results = withContext(Dispatchers.IO) {
+            supabase.from("notes").select().decodeList<Note>()
+        }
+//        Log.d("Notes","${results[0]}")
+        notes.addAll(results)
+    }
+
+    Column {
+        LazyColumn {
+            items(notes) { note ->
+                ListItem(headlineContent = { Text(text = note.body) })
+            }
+        }
+        var newNote by remember {
+            mutableStateOf("")
+        }
+        val composableScope = rememberCoroutineScope()
+        Row{
+            OutlinedTextField(value = newNote, onValueChange =  {newNote = it})
+            Button(onClick = {
+                composableScope.launch(Dispatchers.IO) {
+                    val note = supabase.from("notes").insert(mapOf("body" to newNote)){
+                        select()
+                        single()
+                    }.decodeAs<Note>()
+                    notes.add(note)
+                }
+            }){
+                Text("Save")
+            }
+        }
+    }
+}
+
+
 
 
 @Composable
@@ -66,30 +140,38 @@ fun MyApp(modifier: Modifier = Modifier) {
     var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
 
     ToyReviewTheme {
-        Scaffold(topBar = {
-            Text(text = "Toy Review")
-        }, bottomBar = {
-            MyNavigation(
-                currentScreen = currentScreen,
-                onScreenChange = {
-                    screen -> currentScreen = screen
-                }
-            )
-        }) { innerPadding ->
+        Scaffold(
+//            topBar = {
+//                Text(text = "Toy Review")
+//            },
+            bottomBar = {
+                MyNavigation(
+                    currentScreen = currentScreen,
+                    onScreenChange = { screen ->
+                        currentScreen = screen
+                    }
+                )
+            }
+        ) { innerPadding ->
 //                OnboardingScreen(
 //                    modifier = modifier.padding(innerPadding)
 //                        .background(color = Color.Green),
 //                    onContinueClicked2 = {}
 //                )
             when (currentScreen) {
-                Screen.Home -> OnboardingScreen(modifier = modifier.padding(innerPadding),
-                    onContinueClicked2 = {})
+//                Screen.Home -> OnboardingScreen(modifier = modifier.padding(innerPadding),
+//                    onContinueClicked2 = {})
+//
+//                Screen.Profile -> Greetings(
+//                    modifier = modifier.padding(innerPadding)
+//                )
+                Screen.Home ->
+                    NotesList(modifier = modifier.padding(innerPadding))
 
                 Screen.Profile -> Greetings(
                     modifier = modifier.padding(innerPadding)
                 )
             }
-
         }
     }
 }
@@ -117,8 +199,8 @@ private fun Greetings(
     modifier: Modifier = Modifier, names: List<String> = List(1000) { "$it" }
 ) {
     LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
-        items(items = names) { name ->
-            Greeting(name = name)
+        items(items = names) { note ->
+            Greeting(name = note)
         }
     }
 }

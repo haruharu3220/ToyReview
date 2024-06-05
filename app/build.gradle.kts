@@ -1,6 +1,10 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    kotlin("plugin.serialization") version "1.9.0"
 }
 
 android {
@@ -18,6 +22,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        val propertiesFile = project.rootProject.file("local.properties")
+        val properties = Properties().apply{
+            load(FileInputStream(propertiesFile))
+        }
+
+        buildConfigField ("String", "SUPABASE_URL", "\"${properties["SUPABASE_URL"]}\"")
+        buildConfigField ("String", "SUPABASE_KEY", "\"${properties["SUPABASE_KEY"]}\"")
+
     }
 
     buildTypes {
@@ -37,6 +50,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true // これを追加してBuildConfigフィーチャーを有効にする
         compose = true
     }
     composeOptions {
@@ -72,5 +86,15 @@ dependencies {
 //    Compose でのナビゲーション
     val nav_version = "2.7.7"
     implementation("androidx.navigation:navigation-compose:$nav_version")
+
+
+    //Supabaseのインストール
+    implementation(platform("io.github.jan-tennert.supabase:bom:2.4.3"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
+
+    //Ktorのインストール
+    implementation("io.ktor:ktor-client-android:2.3.11")
+
 
 }
